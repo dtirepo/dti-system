@@ -1,0 +1,342 @@
+from datetime import datetime
+from django.shortcuts import render, redirect
+from django.urls import reverse_lazy
+from django.views.generic import TemplateView, View, CreateView, UpdateView, DeleteView, DetailView
+from django.contrib.auth import authenticate, login
+from django.contrib.auth.mixins import LoginRequiredMixin
+from .models import OrderPaymentItem
+from .forms import UserRegisterForm, OrderPaymentItemForm
+from django.contrib import messages
+from num2words import num2words
+from django.http.response import HttpResponse
+from openpyxl import Workbook
+from openpyxl.styles import *
+
+# Create your views here.
+class Index(TemplateView):
+    template_name = 'order_payment/index.html'
+
+class Dashboard(LoginRequiredMixin, View):
+    def get(self, request):
+
+        date_format = "%Y-%m-%d"
+        start_date = request.GET.get('start_date')
+        end_date = request.GET.get('end_date')
+
+        items = None
+
+        if start_date and end_date:
+            # Filter data within a date range
+            items = OrderPaymentItem.objects.filter(date__range=(start_date, end_date))
+            start_date = datetime.strptime(request.GET.get('start_date'), date_format).date()
+            end_date = datetime.strptime(request.GET.get('end_date'), date_format).date()
+        elif start_date:
+            end_date = datetime.now().date()
+            items = OrderPaymentItem.objects.filter(date__range=(start_date, end_date))
+            start_date = datetime.strptime(request.GET.get('start_date'), date_format).date()
+        else:
+            start_date = datetime.now().date().replace(day=1)
+            end_date = datetime.now().date()
+            items = OrderPaymentItem.objects.filter(date__range=(start_date, end_date))
+
+        new_order_payment = OrderPaymentItem.objects.filter(
+			status="NEW"
+		)
+
+        if new_order_payment.count() > 0:
+            if new_order_payment.count() > 1:
+                messages.info(request, f'There are {new_order_payment.count()} new items.')
+            else:
+                messages.info(request, f'There is {new_order_payment.count()} new item')
+
+        new_order_payment_ids = OrderPaymentItem.objects.filter(
+			status="NEW"
+		).values_list('id', flat=True)
+
+        return render(request, 'order_payment/dashboard.html/', {'items': items, 'new_order_payment_ids': new_order_payment_ids, 'start_date': start_date, 'end_date': end_date})
+
+class SignUpView(View):
+    def get(self, request):
+        form = UserRegisterForm()
+        return render(request, 'order_payment/signup.html', {'form': form})
+
+    def post(self, request):
+        form = UserRegisterForm(request.POST)
+        if form.is_valid():
+            form.save()
+            user = authenticate(
+                username=form.cleaned_data['username'],
+                password=form.cleaned_data['password1']
+            )
+
+            login(request, user)
+            return redirect('index')
+        
+        return render(request, 'order_payment/signup.html', {'form': form})
+    
+def has_decimal(value):
+    return isinstance(value, float) and value % 1 != 0
+
+def num2words_pesos(amount):
+        if has_decimal(amount):
+            whole_number, centavos = str(amount).split('.')
+            whole_number_words = num2words(int(whole_number))
+            centavos_words = num2words(int(centavos))
+            return f"{whole_number_words} pesos and {centavos_words} cents"
+        else:
+            whole_number_words = num2words(amount)
+            return f"{whole_number_words} pesos"
+    
+class AddItem(LoginRequiredMixin, CreateView):
+    model = OrderPaymentItem
+    form_class = OrderPaymentItemForm
+    template_name = 'order_payment/item_form.html'
+    success_url = reverse_lazy('dashboard')
+
+    def form_valid(self, form):
+        form.instance.user = self.request.user
+        form.instance.created_by = self.request.user.username
+
+        total = 0
+
+        if form.instance.fee_type_1_amount is not None:
+            total = total + form.instance.fee_type_1_amount
+        
+        if form.instance.fee_type_2_amount is not None:
+            total = total + form.instance.fee_type_2_amount
+        
+        if form.instance.fee_type_3_amount is not None:
+            total = total + form.instance.fee_type_3_amount
+
+        if form.instance.dst is not None:
+            total = total + form.instance.dst
+
+        if form.instance.surcharge is not None:
+            total = total + form.instance.surcharge
+
+        form.instance.total_amount = total
+        form.instance.amount_in_words = num2words_pesos(total)
+        # form.instance.amount_in_words = num2words(total, to='currency', lang='en', separator=' and', currency='USD')
+
+        return super().form_valid(form)
+
+class EditItem(LoginRequiredMixin, UpdateView):
+    model = OrderPaymentItem
+    form_class = OrderPaymentItemForm
+    template_name = 'order_payment/item_form.html'
+    success_url = reverse_lazy('dashboard')
+
+    def form_valid(self, form):
+        oldItem = OrderPaymentItem.objects.get(pk=form.instance.pk)
+        form.instance.user = self.request.user
+        form.instance.last_update_by = self.request.user.username
+
+        if form.instance.status != oldItem.status and form.instance.status == 'APPROVED':
+            form.instance.approver_username = self.request.user.username
+            form.instance.signature_url = self.request.user.userprofile.signature.url
+            form.instance.acting_accountant = self.request.user.first_name + " " + self.request.user.last_name
+
+        total = 0
+
+        if form.instance.fee_type_1_amount is not None:
+            total = total + form.instance.fee_type_1_amount
+        
+        if form.instance.fee_type_2_amount is not None:
+            total = total + form.instance.fee_type_2_amount
+        
+        if form.instance.fee_type_3_amount is not None:
+            total = total + form.instance.fee_type_3_amount
+
+        if form.instance.dst is not None:
+            total = total + form.instance.dst
+
+        if form.instance.surcharge is not None:
+            total = total + form.instance.surcharge
+
+        form.instance.total_amount = total
+        form.instance.amount_in_words = num2words_pesos(total)
+
+        return super().form_valid(form)
+
+class DeleteItem(LoginRequiredMixin, DeleteView):
+	model = OrderPaymentItem
+	template_name = 'order_payment/delete_item.html'
+	success_url = reverse_lazy('dashboard')
+	context_object_name = 'item'
+
+class ViewItem(LoginRequiredMixin, DetailView):
+    model = OrderPaymentItem
+    template_name = 'order_payment/view_form.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["order_payment"] = self.get_object
+        return context
+
+def export_item_excel(request, pk=None):
+
+    item = OrderPaymentItem.objects.get(pk=pk)
+
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',)
+    response['Content-Disposition'] = 'attachment; filename="' + item.serial_number +'.xlsx"'
+    workbook = Workbook()
+
+    worksheet = workbook.active
+    worksheet.title = item.serial_number
+
+    cell = worksheet.cell(row=2, column=1)
+    cell.value = "Entity Name:"
+    cell = worksheet.cell(row=2, column=2)
+    cell.value = item.entity_name
+    cell.alignment = Alignment(horizontal="left", vertical="center")
+
+    cell = worksheet.cell(row=3, column=1)
+    cell.value = "Fund Cluster:"
+    cell = worksheet.cell(row=3, column=2)
+    cell.value = item.fund_cluster
+    cell.alignment = Alignment(horizontal="left", vertical="center")
+
+    cell = worksheet.cell(row=4, column=1)
+    cell.value = "Serial No:"
+    cell = worksheet.cell(row=4, column=2)
+    cell.value = item.serial_number
+    cell.alignment = Alignment(horizontal="left", vertical="center")
+
+    cell = worksheet.cell(row=5, column=1)
+    cell.value = "Date:"
+    cell = worksheet.cell(row=5, column=2)
+    cell.value = item.date
+    cell.alignment = Alignment(horizontal="left", vertical="center")
+
+    worksheet.merge_cells('A7:B7')
+    title_cell = worksheet['A7']
+    title_cell.value = "ORDER OF PAYMENT"
+    title_cell.font  = Font(bold=True)
+    title_cell.alignment = Alignment(horizontal="center", vertical="center")
+
+    cell = worksheet.cell(row=9, column=1)
+    cell.value = "The Collecting Officer"
+    cell = worksheet.cell(row=9, column=2)
+    cell.value = item.collecting_officer
+    cell.alignment = Alignment(horizontal="left", vertical="center")
+
+    cell = worksheet.cell(row=11, column=1)
+    cell.value = "Please issue Official Receipt in favor of:"
+
+    cell = worksheet.cell(row=13, column=1)
+    cell.value = "Payor:"
+    cell = worksheet.cell(row=13, column=2)
+    cell.value = item.payor
+    cell.alignment = Alignment(horizontal="left", vertical="center")
+
+    cell = worksheet.cell(row=14, column=1)
+    cell.value = "Address:"
+    cell = worksheet.cell(row=14, column=2)
+    cell.value = item.address
+    cell.alignment = Alignment(horizontal="left", vertical="center")
+
+    cell = worksheet.cell(row=15, column=1)
+    cell.value = "Purpose/Type of Fee (1):"
+    cell = worksheet.cell(row=15, column=2)
+    cell.value = item.fee_type_1
+    cell.alignment = Alignment(horizontal="left", vertical="center")
+
+    cell = worksheet.cell(row=16, column=1)
+    cell.value = "Amount of Fee (1):"
+    cell = worksheet.cell(row=16, column=2)
+    cell.value = item.fee_type_1_amount
+    cell.alignment = Alignment(horizontal="left", vertical="center")
+
+    cell = worksheet.cell(row=17, column=1)
+    cell.value = "Purpose/Type of Fee (2):"
+    cell = worksheet.cell(row=17, column=2)
+    cell.value = item.fee_type_2
+    cell.alignment = Alignment(horizontal="left", vertical="center")
+
+    cell = worksheet.cell(row=18, column=1)
+    cell.value = "Amount of Fee (2):"
+    cell = worksheet.cell(row=18, column=2)
+    cell.value = item.fee_type_2_amount
+    cell.alignment = Alignment(horizontal="left", vertical="center")
+
+    cell = worksheet.cell(row=19, column=1)
+    cell.value = "Purpose/Type of Fee (3):"
+    cell = worksheet.cell(row=19, column=2)
+    cell.value = item.fee_type_3
+    cell.alignment = Alignment(horizontal="left", vertical="center")
+
+    cell = worksheet.cell(row=20, column=1)
+    cell.value = "Amount of Fee (13):"
+    cell = worksheet.cell(row=20, column=2)
+    cell.value = item.fee_type_3_amount
+    cell.alignment = Alignment(horizontal="left", vertical="center")
+
+    cell = worksheet.cell(row=21, column=1)
+    cell.value = "DST:"
+    cell = worksheet.cell(row=21, column=2)
+    cell.value = item.dst
+    cell.alignment = Alignment(horizontal="left", vertical="center")
+
+    cell = worksheet.cell(row=22, column=1)
+    cell.value = "Surcharge:"
+    cell = worksheet.cell(row=22, column=2)
+    cell.value = item.surcharge
+    cell.alignment = Alignment(horizontal="left", vertical="center")
+
+    cell = worksheet.cell(row=23, column=1)
+    cell.value = "Total Amount:"
+    cell = worksheet.cell(row=23, column=2)
+    cell.value = item.total_amount
+    cell.alignment = Alignment(horizontal="left", vertical="center")
+
+    cell = worksheet.cell(row=24, column=1)
+    cell.value = "Amount in Words:"
+    cell = worksheet.cell(row=24, column=2)
+    cell.value = item.amount_in_words
+    cell.alignment = Alignment(horizontal="left", vertical="center")
+
+    cell = worksheet.cell(row=25, column=1)
+    cell.value = "Bill No.:"
+    cell = worksheet.cell(row=25, column=2)
+    cell.value = item.bill_no
+    cell.alignment = Alignment(horizontal="left", vertical="center")
+
+    cell = worksheet.cell(row=26, column=1)
+    cell.value = "Bill Date:"
+    cell = worksheet.cell(row=26, column=2)
+    cell.value = item.bill_date
+    cell.alignment = Alignment(horizontal="left", vertical="center")
+
+    cell = worksheet.cell(row=28, column=1)
+    cell.value = "Please deposit the collections under Bank Account/s:"
+
+    cell = worksheet.cell(row=30, column=1)
+    cell.value = "Name of Bank:"
+    cell = worksheet.cell(row=30, column=2)
+    cell.value = item.bank_name
+    cell.alignment = Alignment(horizontal="left", vertical="center")
+
+    cell = worksheet.cell(row=31, column=1)
+    cell.value = "Account Number:"
+    cell = worksheet.cell(row=31, column=2)
+    cell.value = item.account_number
+    cell.alignment = Alignment(horizontal="left", vertical="center")
+
+    cell = worksheet.cell(row=32, column=1)
+    cell.value = "Amount:"
+    cell = worksheet.cell(row=32, column=2)
+    cell.value = item.deposit_amount
+    cell.alignment = Alignment(horizontal="left", vertical="center")
+
+    for col in worksheet.columns:
+     colLen = 0
+     column = col[0].column_letter # Get the column name
+     for cell in col:
+             if len(str(cell.value)) > colLen:
+                 colLen = len(str(cell.value))
+     set_col_width = colLen + 5
+     # setting the column width
+     worksheet.column_dimensions[column].width = set_col_width
+
+    workbook.save(response)
+    return response

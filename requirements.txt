@@ -1,0 +1,16 @@
+asgiref==3.8.1
+crispy-bootstrap5==2025.4
+dj-database-url==2.3.0
+Django==5.2
+django-crispy-forms==2.3
+docopt==0.6.2
+et_xmlfile==2.0.0
+gunicorn==23.0.0
+num2words==0.5.14
+openpyxl==3.1.5
+packaging==25.0
+pillow==11.2.1
+psycopg2==2.9.10
+sqlparse==0.5.3
+typing_extensions==4.13.2
+whitenoise==6.9.0

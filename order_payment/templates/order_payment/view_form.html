@@ -1,0 +1,123 @@
+{% extends 'order_payment/base.html' %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+	<a href="{% url 'dashboard' %}" class="btn btn-outline-primary my-3 mx-4">Go Back</a>
+
+	<div class="row">
+		<div class="col-11 col-md-4 mx-auto mt-5">
+			<h4>Order of Payment</h4>
+            <table class="table table-hover table-striped">
+                <tbody>
+                    <tr>
+						<th scope="row">Entity Name:</th>
+						<td>{{ order_payment.entity_name }}</td>
+                    </tr>
+                    <tr>
+						<th scope="row">Fund Cluster:</th>
+						<td>{{ order_payment.fund_cluster }}</td>
+                    </tr>
+                    <tr>
+						<th scope="row">Serial Number:</th>
+						<td>{{ order_payment.serial_number }}</td>
+                    </tr>
+					<tr>
+						<th scope="row">Date:</th>
+						<td>{{ order_payment.date }}</td>
+                    </tr>
+                    <tr>
+						<th scope="row">Collecting Officer:</th>
+						<td>{{ order_payment.collecting_officer }}</td>
+                    </tr>
+                    <tr>
+						<th scope="row">Payor:</th>
+						<td>{{ order_payment.payor }}</td>
+                    </tr>
+                    <tr>
+						<th scope="row">Address:</th>
+						<td>{{ order_payment.address }}</td>
+                    </tr>
+                    <tr>
+						<th scope="row">Purpose/Type Of Fee 1:</th>
+						<td>{{ order_payment.fee_type_1 }}</td>
+                    </tr>
+                    <tr>
+						<th scope="row">Amount Of Fee:</th>
+						<td>{{ order_payment.fee_type_1_amount }}</td>
+                    </tr>
+                    <tr>
+						<th scope="row">Purpose/Type Of Fee 2:</th>
+						<td>{{ order_payment.fee_type_2 }}</td>
+                    </tr>
+                    <tr>
+						<th scope="row">Amount Of Fee:</th>
+						<td>{{ order_payment.fee_type_2_amount }}</td>
+                    </tr>
+                    <tr>
+						<th scope="row">Purpose/Type Of Fee 3:</th>
+						<td>{{ order_payment.fee_type_3 }}</td>
+                    </tr>
+                    <tr>
+						<th scope="row">Amount Of Fee:</th>
+						<td>{{ order_payment.fee_type_3_amount }}</td>
+                    </tr>
+                    <tr>
+						<th scope="row">DST:</th>
+						<td>{{ order_payment.dst }}</td>
+                    </tr>
+                    <tr>
+						<th scope="row">Surcharge:</th>
+						<td>{{ order_payment.surcharge }}</td>
+                    </tr>
+                    <tr>
+						<th scope="row">Total Amount:</th>
+						<td>{{ order_payment.total_amount }}</td>
+                    </tr>
+                    <tr>
+						<th scope="row">Amount in Words:</th>
+						<td>{{ order_payment.amount_in_words }}</td>
+                    </tr>
+                    <tr>
+						<th scope="row">Bill No.:</th>
+						<td>{{ order_payment.bill_no }}</td>
+                    </tr>
+                    <tr>
+						<th scope="row">Bill Date:</th>
+						<td>{{ order_payment.bill_date }}</td>
+                    </tr>
+                    <tr>
+						<th scope="row">Bank Name:</th>
+						<td>{{ order_payment.bank_name }}</td>
+                    </tr>
+                    <tr>
+						<th scope="row">Bank Account:</th>
+						<td>{{ order_payment.account_number }}</td>
+                    </tr>
+                    <tr>
+						<th scope="row">Amount:</th>
+						<td>{{ order_payment.deposit_amount }}</td>
+                    </tr>
+                    <tr>
+						<th scope="row">Status:</th>
+						<td>{{ order_payment.status }}</td>
+                    </tr>
+					<tr>
+						<th scope="row">Approved By:</th>
+						{% if order_payment.signature_url is None %}
+							<td></td>
+						{% else %}
+							<td><img src={{order_payment.signature_url}} height=100 width=300></img></td>
+						{% endif %}
+                    </tr>
+					<tr>
+						<th scope="row">Acting Accountant</th>
+						<td>{{order_payment.acting_accountant}} </td>
+                    </tr>
+                </tbody>
+            </table>
+			<a href="{% url 'export-item-excel' order_payment.id %}" class="btn btn-primary">Export</a>
+            <br />
+			<br />
+		</div>
+	</div>
+{% endblock content %}
