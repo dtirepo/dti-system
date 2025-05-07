@@ -81,7 +81,11 @@ class SignUpView(View):
         return render(request, 'order_payment/signup.html', {'form': form})
     
 def has_decimal(value):
-    return isinstance(value, float) and value % 1 != 0
+    split = len(str(value).split('.'))
+    if split > 0:
+        return True
+    else:
+        return False
 
 def num2words_pesos(amount):
         if has_decimal(amount):
