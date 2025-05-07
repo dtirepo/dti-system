@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from datetime import datetime
 from django.core.files.storage import FileSystemStorage
+from cloudinary.models import CloudinaryField
 
 def generate_serial():
     year = datetime.now().year
@@ -73,7 +74,9 @@ class OrderPaymentItem(models.Model):
 
 class UserProfile(models.Model):
     user = models.OneToOneField(User, null=True, on_delete=models.CASCADE)
-    signature = models.ImageField(blank=True, null=True)
+    signature = CloudinaryField('image', folder='dti-signature-images', default='dti-signature-images/default.jpg')
+    role = models.CharField(max_length=200, blank=True, null=True)
+    # signature = models.ImageField(blank=True, null=True)
 
     class Meta:
         verbose_name_plural = "User Profiles"

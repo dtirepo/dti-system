@@ -11,6 +11,12 @@ from num2words import num2words
 from django.http.response import HttpResponse
 from openpyxl import Workbook
 from openpyxl.styles import *
+import openpyxl
+from openpyxl.drawing.image import Image
+import PIL
+import io
+import urllib3
+from openpyxl.worksheet.cell_range import CellRange
 
 # Create your views here.
 class Index(TemplateView):
@@ -184,159 +190,226 @@ def export_item_excel(request, pk=None):
     worksheet = workbook.active
     worksheet.title = item.serial_number
 
-    cell = worksheet.cell(row=2, column=1)
+    col_pos = 2
+    row_pos = 2
+
+    cell = worksheet.cell(row=row_pos, column=col_pos)
     cell.value = "Entity Name:"
-    cell = worksheet.cell(row=2, column=2)
+    cell.font  = Font(bold=True)
+    cell = worksheet.cell(row=row_pos, column=col_pos+1)
     cell.value = item.entity_name
     cell.alignment = Alignment(horizontal="left", vertical="center")
+    cell.font  = Font(bold=True)
 
-    cell = worksheet.cell(row=3, column=1)
+    row_pos += 1
+    cell = worksheet.cell(row=row_pos, column=col_pos)
     cell.value = "Fund Cluster:"
-    cell = worksheet.cell(row=3, column=2)
+    cell.font  = Font(bold=True)
+    cell = worksheet.cell(row=row_pos, column=col_pos+1)
     cell.value = item.fund_cluster
     cell.alignment = Alignment(horizontal="left", vertical="center")
+    cell.font  = Font(bold=True)
 
-    cell = worksheet.cell(row=4, column=1)
+    row_pos += 1
+    cell = worksheet.cell(row=row_pos, column=col_pos)
     cell.value = "Serial No:"
-    cell = worksheet.cell(row=4, column=2)
+    cell.font  = Font(bold=True)
+    cell = worksheet.cell(row=row_pos, column=col_pos+1)
     cell.value = item.serial_number
     cell.alignment = Alignment(horizontal="left", vertical="center")
+    cell.font  = Font(bold=True)
 
-    cell = worksheet.cell(row=5, column=1)
+    row_pos += 1
+    cell = worksheet.cell(row=row_pos, column=col_pos)
     cell.value = "Date:"
-    cell = worksheet.cell(row=5, column=2)
+    cell.font  = Font(bold=True)
+    cell = worksheet.cell(row=row_pos, column=col_pos+1)
     cell.value = item.date
     cell.alignment = Alignment(horizontal="left", vertical="center")
+    cell.font  = Font(bold=True)
 
-    worksheet.merge_cells('A7:B7')
-    title_cell = worksheet['A7']
+    row_pos += 2
+    worksheet.merge_cells('B7:C7')
+    title_cell = worksheet.cell(row=row_pos, column=col_pos)
     title_cell.value = "ORDER OF PAYMENT"
     title_cell.font  = Font(bold=True)
     title_cell.alignment = Alignment(horizontal="center", vertical="center")
 
-    cell = worksheet.cell(row=9, column=1)
+    row_pos += 2
+    cell = worksheet.cell(row=row_pos, column=col_pos)
     cell.value = "The Collecting Officer"
-    cell = worksheet.cell(row=9, column=2)
+    cell = worksheet.cell(row=row_pos, column=col_pos+1)
     cell.value = item.collecting_officer
     cell.alignment = Alignment(horizontal="left", vertical="center")
 
-    cell = worksheet.cell(row=11, column=1)
+    row_pos += 2
+    cell = worksheet.cell(row=row_pos, column=col_pos)
     cell.value = "Please issue Official Receipt in favor of:"
 
-    cell = worksheet.cell(row=13, column=1)
+    row_pos += 2
+    cell = worksheet.cell(row=row_pos, column=col_pos)
     cell.value = "Payor:"
-    cell = worksheet.cell(row=13, column=2)
+    cell = worksheet.cell(row=row_pos, column=col_pos+1)
     cell.value = item.payor
     cell.alignment = Alignment(horizontal="left", vertical="center")
 
-    cell = worksheet.cell(row=14, column=1)
+    row_pos += 1
+    cell = worksheet.cell(row=row_pos, column=col_pos)
     cell.value = "Address:"
-    cell = worksheet.cell(row=14, column=2)
+    cell = worksheet.cell(row=row_pos, column=col_pos+1)
     cell.value = item.address
     cell.alignment = Alignment(horizontal="left", vertical="center")
 
-    cell = worksheet.cell(row=15, column=1)
+    row_pos += 1
+    cell = worksheet.cell(row=row_pos, column=col_pos)
     cell.value = "Purpose/Type of Fee (1):"
-    cell = worksheet.cell(row=15, column=2)
+    cell = worksheet.cell(row=row_pos, column=col_pos+1)
     cell.value = item.fee_type_1
     cell.alignment = Alignment(horizontal="left", vertical="center")
 
-    cell = worksheet.cell(row=16, column=1)
+    row_pos += 1
+    cell = worksheet.cell(row=row_pos, column=col_pos)
     cell.value = "Amount of Fee (1):"
-    cell = worksheet.cell(row=16, column=2)
+    cell = worksheet.cell(row=row_pos, column=col_pos+1)
     cell.value = item.fee_type_1_amount
     cell.alignment = Alignment(horizontal="left", vertical="center")
 
-    cell = worksheet.cell(row=17, column=1)
+    row_pos += 1
+    cell = worksheet.cell(row=row_pos, column=col_pos)
     cell.value = "Purpose/Type of Fee (2):"
-    cell = worksheet.cell(row=17, column=2)
+    cell = worksheet.cell(row=row_pos, column=col_pos+1)
     cell.value = item.fee_type_2
     cell.alignment = Alignment(horizontal="left", vertical="center")
 
-    cell = worksheet.cell(row=18, column=1)
+    row_pos += 1
+    cell = worksheet.cell(row=row_pos, column=col_pos)
     cell.value = "Amount of Fee (2):"
-    cell = worksheet.cell(row=18, column=2)
+    cell = worksheet.cell(row=row_pos, column=col_pos+1)
     cell.value = item.fee_type_2_amount
     cell.alignment = Alignment(horizontal="left", vertical="center")
 
-    cell = worksheet.cell(row=19, column=1)
+    row_pos += 1
+    cell = worksheet.cell(row=row_pos, column=col_pos)
     cell.value = "Purpose/Type of Fee (3):"
-    cell = worksheet.cell(row=19, column=2)
+    cell = worksheet.cell(row=row_pos, column=col_pos+1)
     cell.value = item.fee_type_3
     cell.alignment = Alignment(horizontal="left", vertical="center")
 
-    cell = worksheet.cell(row=20, column=1)
+    row_pos += 1
+    cell = worksheet.cell(row=row_pos, column=col_pos)
     cell.value = "Amount of Fee (13):"
-    cell = worksheet.cell(row=20, column=2)
+    cell = worksheet.cell(row=row_pos, column=col_pos+1)
     cell.value = item.fee_type_3_amount
     cell.alignment = Alignment(horizontal="left", vertical="center")
 
-    cell = worksheet.cell(row=21, column=1)
+    row_pos += 1
+    cell = worksheet.cell(row=row_pos, column=col_pos)
     cell.value = "DST:"
-    cell = worksheet.cell(row=21, column=2)
+    cell = worksheet.cell(row=row_pos, column=col_pos+1)
     cell.value = item.dst
     cell.alignment = Alignment(horizontal="left", vertical="center")
 
-    cell = worksheet.cell(row=22, column=1)
+    row_pos += 1
+    cell = worksheet.cell(row=row_pos, column=col_pos)
     cell.value = "Surcharge:"
-    cell = worksheet.cell(row=22, column=2)
+    cell = worksheet.cell(row=row_pos, column=col_pos+1)
     cell.value = item.surcharge
     cell.alignment = Alignment(horizontal="left", vertical="center")
 
-    cell = worksheet.cell(row=23, column=1)
+    row_pos += 1
+    cell = worksheet.cell(row=row_pos, column=col_pos)
     cell.value = "Total Amount:"
-    cell = worksheet.cell(row=23, column=2)
+    cell = worksheet.cell(row=row_pos, column=col_pos+1)
     cell.value = item.total_amount
     cell.alignment = Alignment(horizontal="left", vertical="center")
 
-    cell = worksheet.cell(row=24, column=1)
+    row_pos += 1
+    cell = worksheet.cell(row=row_pos, column=col_pos)
     cell.value = "Amount in Words:"
-    cell = worksheet.cell(row=24, column=2)
+    cell = worksheet.cell(row=row_pos, column=col_pos+1)
     cell.value = item.amount_in_words
     cell.alignment = Alignment(horizontal="left", vertical="center")
 
-    cell = worksheet.cell(row=25, column=1)
+    row_pos += 1
+    cell = worksheet.cell(row=row_pos, column=col_pos)
     cell.value = "Bill No.:"
-    cell = worksheet.cell(row=25, column=2)
+    cell = worksheet.cell(row=row_pos, column=col_pos+1)
     cell.value = item.bill_no
     cell.alignment = Alignment(horizontal="left", vertical="center")
 
-    cell = worksheet.cell(row=26, column=1)
+    row_pos += 1
+    cell = worksheet.cell(row=row_pos, column=col_pos)
     cell.value = "Bill Date:"
-    cell = worksheet.cell(row=26, column=2)
+    cell = worksheet.cell(row=row_pos, column=col_pos+1)
     cell.value = item.bill_date
     cell.alignment = Alignment(horizontal="left", vertical="center")
 
-    cell = worksheet.cell(row=28, column=1)
+    row_pos += 2
+    cell = worksheet.cell(row=row_pos, column=col_pos)
     cell.value = "Please deposit the collections under Bank Account/s:"
 
-    cell = worksheet.cell(row=30, column=1)
+    row_pos += 2
+    cell = worksheet.cell(row=row_pos, column=col_pos)
     cell.value = "Name of Bank:"
-    cell = worksheet.cell(row=30, column=2)
+    cell = worksheet.cell(row=row_pos, column=col_pos+1)
     cell.value = item.bank_name
     cell.alignment = Alignment(horizontal="left", vertical="center")
 
-    cell = worksheet.cell(row=31, column=1)
+    row_pos += 1
+    cell = worksheet.cell(row=row_pos, column=col_pos)
     cell.value = "Account Number:"
-    cell = worksheet.cell(row=31, column=2)
+    cell = worksheet.cell(row=row_pos, column=col_pos+1)
     cell.value = item.account_number
     cell.alignment = Alignment(horizontal="left", vertical="center")
 
-    cell = worksheet.cell(row=32, column=1)
+    row_pos += 1
+    cell = worksheet.cell(row=row_pos, column=col_pos)
     cell.value = "Amount:"
-    cell = worksheet.cell(row=32, column=2)
+    cell = worksheet.cell(row=row_pos, column=col_pos+1)
     cell.value = item.deposit_amount
     cell.alignment = Alignment(horizontal="left", vertical="center")
 
     for col in worksheet.columns:
-     colLen = 0
-     column = col[0].column_letter # Get the column name
-     for cell in col:
+        colLen = 0
+        column = col[0].column_letter # Get the column name
+        for cell in col:
              if len(str(cell.value)) > colLen:
                  colLen = len(str(cell.value))
-     set_col_width = colLen + 5
-     # setting the column width
-     worksheet.column_dimensions[column].width = set_col_width
+        set_col_width = colLen + 3
+        # setting the column width
+        worksheet.column_dimensions[column].width = set_col_width
+
+    worksheet.column_dimensions["A"].width = 3
+
+    http = urllib3.PoolManager()
+    r = http.request('GET', item.signature_url)
+    image_file = io.BytesIO(r.data)
+    img = Image(image_file)
+    img.height = 40
+    img.width = 120
+    worksheet.add_image(img, 'C34')
+
+    row_pos += 4
+    cell = worksheet.cell(row=row_pos, column=col_pos)
+    cell.value = "Approver:"
+    cell = worksheet.cell(row=row_pos, column=col_pos+1)
+    cell.value = item.user.first_name + " " + item.user.last_name
+    cell.alignment = Alignment(horizontal="left", vertical="center")
+
+    row_pos += 1
+    cell = worksheet.cell(row=row_pos, column=col_pos)
+    cell.value = "Role:"
+    cell = worksheet.cell(row=row_pos, column=col_pos+1)
+    cell.value = item.user.userprofile.role
+    cell.alignment = Alignment(horizontal="left", vertical="center")
+
+    range = CellRange("B2:C37")
+    for row, col in range.cells:
+        top = Side(style="thin") if (row, col) in range.top else None
+        left = Side(style="thin") if (row, col) in range.left else None
+        right = Side(style="thin") if (row, col) in range.right else None
+        bottom = Side(style="thin") if (row, col) in range.bottom else None
+        worksheet.cell(row, col).border = Border(left, right, top, bottom, outline=True)
 
     workbook.save(response)
     return response

@@ -13,6 +13,9 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 import os
 import dj_database_url
 from pathlib import Path
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -30,6 +33,20 @@ ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS").split(" ")
 # ALLOWED_HOSTS = ["*"]
 # SECRET_KEY = "b1f293a1506548ae00af7485da15151f"
 # DEBUG = True
+
+# Cloudinary Config Prod
+cloudinary.config(
+    cloud_name=os.environ.get("CLOUD_NAME"),
+    api_key=os.environ.get("API_KEY"),
+    api_secret=os.environ.get("API_SECRET")
+)
+
+# Cloudinary Config Local
+# cloudinary.config(
+#     cloud_name="db379lcfo",
+#     api_key="318942919576448",
+#     api_secret="lgi9Sg8kK7PqytP725qbEIUf1Tw"
+# )
 
 # Application definition
 
