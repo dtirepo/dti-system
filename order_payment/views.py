@@ -407,12 +407,15 @@ def export_item_excel(request, pk=None):
     cell.alignment = Alignment(horizontal="left", vertical="center")
 
     user = User.objects.get(username=item.approver_username)
+    
     row_pos += 1
     cell = worksheet.cell(row=row_pos, column=col_pos)
     cell.value = "Role:"
-    cell = worksheet.cell(row=row_pos, column=col_pos+1)
-    cell.value = user.userprofile.role
-    cell.alignment = Alignment(horizontal="left", vertical="center")
+
+    if user is not None:
+        cell = worksheet.cell(row=row_pos, column=col_pos+1)
+        cell.value = user.userprofile.role
+        cell.alignment = Alignment(horizontal="left", vertical="center")
 
     range = CellRange("B2:C37")
     for row, col in range.cells:
