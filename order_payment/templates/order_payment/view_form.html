@@ -111,11 +111,11 @@
                     </tr>
 					<tr>
 						<th scope="row">Name:</th>
-						<td>{{order_payment.acting_accountant}} </td>
+						<td>{{order_payment.approver_name}} </td>
                     </tr>
                 </tbody>
             </table>
-			<a href="{% url 'export-item-excel' order_payment.id %}" class="btn btn-primary">Export</a>
+			<a href="{% url 'export-item-excel' order_payment.id %}" class="btn btn-primary">Download</a>
             <br />
 			<br />
 		</div>

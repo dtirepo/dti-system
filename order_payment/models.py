@@ -54,7 +54,7 @@ class OrderPaymentItem(models.Model):
     deposit_amount = models.DecimalField(max_digits=10, decimal_places=2)
 
     # approver
-    acting_accountant = models.CharField(max_length=200, null=True, blank=True)
+    approver_name = models.CharField(max_length=200, null=True, blank=True)
     approver_username = models.CharField(max_length=200, null=True, blank=True)
     signature_url = models.CharField(max_length=500, null=True, blank=True)
 

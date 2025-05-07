@@ -4,7 +4,7 @@ from django.urls import reverse_lazy
 from django.views.generic import TemplateView, View, CreateView, UpdateView, DeleteView, DetailView
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.mixins import LoginRequiredMixin
-from .models import OrderPaymentItem
+from .models import OrderPaymentItem, UserProfile, User
 from .forms import UserRegisterForm, OrderPaymentItemForm
 from django.contrib import messages
 from num2words import num2words
@@ -45,7 +45,7 @@ class Dashboard(LoginRequiredMixin, View):
             end_date = datetime.now().date()
             items = OrderPaymentItem.objects.filter(date__range=(start_date, end_date))
 
-        new_order_payment = OrderPaymentItem.objects.filter(
+        new_order_payment = items.filter(
 			status="NEW"
 		)
 
@@ -140,7 +140,12 @@ class EditItem(LoginRequiredMixin, UpdateView):
         if form.instance.status != oldItem.status and form.instance.status == 'APPROVED':
             form.instance.approver_username = self.request.user.username
             form.instance.signature_url = self.request.user.userprofile.signature.url
-            form.instance.acting_accountant = self.request.user.first_name + " " + self.request.user.last_name
+            form.instance.approver_name = self.request.user.first_name + " " + self.request.user.last_name
+        
+        if form.instance.status == 'NEW':
+            form.instance.approver_username = None
+            form.instance.signature_url = None
+            form.instance.approver_name = None
 
         total = 0
 
@@ -381,26 +386,28 @@ def export_item_excel(request, pk=None):
 
     worksheet.column_dimensions["A"].width = 3
 
-    http = urllib3.PoolManager()
-    r = http.request('GET', item.signature_url)
-    image_file = io.BytesIO(r.data)
-    img = Image(image_file)
-    img.height = 40
-    img.width = 120
-    worksheet.add_image(img, 'C34')
+    if item.signature_url is not None:
+        http = urllib3.PoolManager()
+        r = http.request('GET', item.signature_url)
+        image_file = io.BytesIO(r.data)
+        img = Image(image_file)
+        img.height = 40
+        img.width = 120
+        worksheet.add_image(img, 'C34')
 
     row_pos += 4
     cell = worksheet.cell(row=row_pos, column=col_pos)
     cell.value = "Approver:"
     cell = worksheet.cell(row=row_pos, column=col_pos+1)
-    cell.value = item.user.first_name + " " + item.user.last_name
+    cell.value = item.approver_name
     cell.alignment = Alignment(horizontal="left", vertical="center")
 
+    user = User.objects.get(username=item.approver_username)
     row_pos += 1
     cell = worksheet.cell(row=row_pos, column=col_pos)
     cell.value = "Role:"
     cell = worksheet.cell(row=row_pos, column=col_pos+1)
-    cell.value = item.user.userprofile.role
+    cell.value = user.userprofile.role
     cell.alignment = Alignment(horizontal="left", vertical="center")
 
     range = CellRange("B2:C37")
