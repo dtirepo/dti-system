@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from datetime import datetime
 from django.core.files.storage import FileSystemStorage
+from django.utils import timezone
 from cloudinary.models import CloudinaryField
 
 def generate_serial():
@@ -13,7 +14,7 @@ def generate_serial():
 	)
 
     if(monthly_count.count() > 0):
-        last_item = monthly_count.latest('date')
+        last_item = monthly_count.latest('date_time')
         last_number = int(last_item.serial_number.split('-')[2])
         return str(year) + "-" + str(month) + "-" + str(last_number+1).zfill(3)
     else:
@@ -27,6 +28,7 @@ class OrderPaymentItem(models.Model):
     fund_cluster = models.CharField(max_length=200, default="01-Regular Agency Fund")
     serial_number = models.CharField(max_length=200, default=generate_serial)
     date = models.DateField(auto_now_add=True)
+    date_time = models.DateTimeField(auto_now_add=True)
 
     # collecting officer
     collecting_officer = models.CharField(max_length=200, default="Cash/Treasury Unit")
