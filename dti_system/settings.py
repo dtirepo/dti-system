@@ -104,7 +104,7 @@ DATABASES = {
 }
 
 database_url = os.environ.get("DATABASE_URL")
-# database_url = "postgresql://dti_system_user:fVcH3lhVveHGeoE0X5PpZwYCu7aGPrlj@dpg-d04e1js9c44c739i39mg-a.singapore-postgres.render.com/dti_system"
+# database_url = "postgresql://dti_user:ZZykT9627iDMogWWbpbMQIvvcWs7Uo44@dpg-d0e5ecc9c44c73ck2f5g-a.singapore-postgres.render.com/dti_system_db"
 DATABASES["default"] = dj_database_url.parse(database_url)
 
 
